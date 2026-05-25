@@ -312,7 +312,7 @@ button:hover{opacity:0.9}
     <h3>🥇 单人计时赛最佳成绩（按难度排名）</h3>
     <div class="rank-list" id="rankList">暂无成绩</div>
     <div class="rank-input">
-        <input type="text" id="userName" placeholder="请输入你的姓名（登记成绩）" maxlength="8" disabled>
+        <input type="text" id="userName" placeholder="请输入你的姓名（登记成绩）" maxlength="4" disabled>
         <button onclick="saveRankRecord()" disabled>登记上榜</button>
     </div>
 </div>
@@ -471,7 +471,9 @@ function renderBestTime(){
 }
 
 function startTimer(){
-    startTime = Date.now();
+    if(gameMode === "single" && startTime === 0){
+        startTime = Date.now();
+    }
     timerInterval = setInterval(()=>{
         let used = Date.now() - startTime;
         document.getElementById("nowTime").innerText = formatTime(used);
@@ -486,6 +488,7 @@ function stopTimer(){
 }
 
 function saveBestTime(ms){
+    if(ms < 1000) return;
     let timeStr = formatTime(ms);
     if(!bestRecord || ms < parseTimeToMs(bestRecord)){
         bestRecord = timeStr;
@@ -509,7 +512,33 @@ function updateTopicExplain(topicKey) {
     }
 }
 
+// 每周一09:00自动清空排行榜（新增核心函数）
+function checkWeeklyReset() {
+    const now = new Date();
+    const day = now.getDay(); // 0=周日,1=周一,...6=周六
+    const hour = now.getHours();
+    const lastReset = localStorage.getItem("memorize_last_weekly_reset");
+    const todayDate = now.toLocaleDateString();
+
+    // 条件：周一 9点后 + 今天还没重置过
+    if (day === 1 && hour >= 9 && lastReset !== todayDate) {
+        // 清空排行榜 + 最佳记录
+        localStorage.removeItem("memorize_rank_list");
+        localStorage.removeItem("memorize_best_time");
+        bestRecord = "";
+        localStorage.setItem("memorize_last_weekly_reset", todayDate);
+        
+        // 刷新界面
+        loadRankList();
+        renderBestTime();
+        alert("⏰ 每周一09:00，个人计时赛成绩已自动清零！");
+    }
+}
+
 function loadStats() {
+    // 每次加载先检查是否需要清零
+    checkWeeklyReset();
+    
     let keyCount = "memorize_master_total_visits";
     let count = localStorage.getItem(keyCount);
     count = count ? parseInt(count) : 0;
@@ -583,7 +612,7 @@ function renderRankList(list){
         list.forEach((item,i)=>{
             let name = item.name || "匿名";
             let topic = optionNameMap[item.topic] || item.topic;
-            let time = item.timeStr;
+            let time = item.time || item.timeStr || "00:00";
             let date = item.date;
             html += `
             <div class="rank-item">
@@ -597,9 +626,9 @@ function renderRankList(list){
     document.getElementById("rankList").innerHTML = html;
 }
 
-// 验证姓名：只能输入汉字
+// 验证姓名：只能输入2-4个汉字
 function isValidChineseName(name) {
-    const reg = /^[\u4e00-\u9fa5]{2,8}$/;
+    const reg = /^[\u4e00-\u9fa5]{2,4}$/;
     return reg.test(name);
 }
 
@@ -609,13 +638,16 @@ function saveRankRecord(){
         alert("请输入姓名！");
         return;
     }
-    // 新增：验证必须是纯汉字姓名
     if(!isValidChineseName(name)){
-        alert("请输入2-8位纯汉字姓名，禁止输入数字、字母、符号！");
+        alert("请输入2-4位纯汉字姓名，禁止输入数字、字母、符号！");
         return;
     }
     if(!lastGameData){
         alert("请先完成一局单人计时赛！");
+        return;
+    }
+    if(lastGameData.timeMs < 1000){
+        alert("成绩异常，少于1秒的记录无法上榜！");
         return;
     }
     
@@ -631,6 +663,7 @@ function saveRankRecord(){
     let record = {
         name: name,
         topic: lastGameData.topic,
+        time: lastGameData.timeStr,
         timeStr: lastGameData.timeStr,
         timeMs: lastGameData.timeMs,
         date: new Date().toLocaleDateString()
@@ -874,12 +907,16 @@ function unlockRankInput() {
     document.querySelector(".rank-input button").disabled = false;
 }
 
-// 新增：倒计时核心函数
+// 修复：倒计时开始即记录时间，彻底杜绝0秒
 function startCountdown(topicKey) {
-    // 根据难度设置倒计时 3-8 秒
     const difficulty = topicDifficulty[topicKey] || 3;
     let count = Math.min(8, Math.max(3, difficulty));
     
+    // 修复：单人模式从倒计时开始就初始化时间
+    if(gameMode === "single"){
+        startTime = Date.now();
+    }
+
     countdownLayer.style.display = 'flex';
     countdownLayer.innerText = count;
     
@@ -889,12 +926,10 @@ function startCountdown(topicKey) {
         if (count <= 0) {
             clearInterval(countdownTimer);
             countdownLayer.style.display = 'none';
-            // 倒计时结束，隐藏答案，解锁卡片，开始答题
             coverAllCards();
             document.querySelectorAll(".card").forEach(c => c.style.pointerEvents = "auto");
             document.getElementById("tip").innerText = "倒计时结束，开始答题！";
             
-            // 单人模式开始计时
             if(gameMode === "single") startTimer();
             return;
         }
@@ -903,7 +938,6 @@ function startCountdown(topicKey) {
 }
 
 function startGame(){
-    // 判断是否选择题目
     let sub = document.getElementById("subjectSelect").value;
     if (!sub) {
         document.getElementById("tip").innerText = "请先在下拉框中选择题目！";
@@ -957,7 +991,7 @@ function startGame(){
         let div=document.createElement("div");
         div.className="card";
         div.textContent="?";
-        div.style.pointerEvents = "none"; // 倒计时期间禁止点击
+        div.style.pointerEvents = "none";
         div.onclick=()=>{
             if(lock||div.classList.contains("flipped")||div.classList.contains("all-show"))return;
             div.classList.add("flipped");
@@ -1003,9 +1037,7 @@ function startGame(){
         box.appendChild(div);
     });
 
-    // 显示正确答案
     showAllAnswer();
-    // 启动倒计时
     startCountdown(sub);
 
     if(gameMode === "pk"){
@@ -1021,7 +1053,6 @@ function resetScore(){
     updatePlayer();
 }
 
-// 下拉菜单切换时自动开始游戏
 document.getElementById('subjectSelect').addEventListener('change', function() {
     startGame();
 });
