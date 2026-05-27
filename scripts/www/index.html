@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>记忆大师 1.5 - 全科排序PK/单人计时闯关</title>
+<title>记忆大师 1.5 - 智能赋分版 | 全科排序PK/单人计时闯关</title>
 <style>
 *{box-sizing:border-box;font-family:"Microsoft YaHei",sans-serif}
 body{margin:0;padding:15px;background:#f7f7fc;color:#333}
@@ -14,6 +14,7 @@ h1{text-align:center;color:#2c3e50;margin-bottom:10px;font-size:28px;font-weight
 .p1{color:#e74c3c;margin:0 15px;font-weight:bold}
 .p2{color:#3498db;margin:0 15px;font-weight:bold}
 .now-player{background:#fff5cc;padding:6px 12px;border-radius:6px;display:inline-block;margin-top:8px}
+.score-detail{font-size:14px;background:#f0f0f0;border-radius:8px;padding:6px 12px;margin-top:8px;display:inline-block;}
 .mode-box{background:#fff;padding:12px;border-radius:12px;margin-bottom:15px;box-shadow:0 2px 8px rgba(0,0,0,0.06);text-align:center}
 .mode-box label{margin:0 10px;font-weight:bold;cursor:pointer}
 .time-panel{background:#e8f4fd;padding:10px;border-radius:8px;text-align:center;margin-bottom:15px;font-size:18px;font-weight:bold;color:#2c3e50;display:none}
@@ -41,13 +42,12 @@ button:hover{opacity:0.9}
 #tip{text-align:center;font-size:16px;margin:12px 0;font-weight:bold;color:#333}
 .topic-name{text-align:center;font-size:20px;font-weight:bold;color:#222;background:#fff5cc;padding:10px;border-radius:8px;margin:12px 0;}
 .topic-explain{background:#f8fff0;padding:12px 15px;border-radius:8px;margin:10px 0 20px 0;font-size:15px;line-height:1.6;color:#2c3e50;border-left:4px solid #27ae60;display:none;}
-.topic-explain strong{color:#e74c3c;}
+.round-score-info{background:#e9f7ef;padding:8px 15px;border-radius:20px;margin:10px auto;display:inline-block;font-size:15px;font-weight:bold;color:#2c6e3c;}
 .popular-panel{background:#fff;padding:15px;border-radius:12px;margin:20px 0;box-shadow:0 2px 8px rgba(0,0,0,0.06);}
 .popular-panel h3{margin:0 0 10px 0;color:#2c3e50;font-size:18px;}
 .popular-list{max-height:200px;overflow-y:auto;}
 .popular-item{padding:6px 8px;border-bottom:1px solid #eee;font-size:14px;}
 .popular-item span{color:#e74c3c;font-weight:bold;}
-
 .rank-panel{background:#fff;padding:15px;border-radius:12px;margin:20px 0;box-shadow:0 2px 8px rgba(0,0,0,0.06);display:none;}
 .rank-panel h3{margin:0 0 10px 0;color:#2c3e50;font-size:18px;}
 .rank-list{max-height:220px;overflow-y:auto;}
@@ -59,751 +59,96 @@ button:hover{opacity:0.9}
 .rank-input{margin-top:10px;display:flex;gap:8px;align-items:center;}
 .rank-input input{padding:8px 12px;border:1px solid #ddd;border-radius:8px;flex:1;}
 .rank-input button{background:#27ae60;margin:0;}
-
 .game-desc{margin-top:30px;padding:16px;background:#fff;border-radius:12px;box-shadow:0 2px 6px rgba(0,0,0,0.05);font-size:15px;line-height:1.7;}
 .game-desc h4{margin:0 0 10px 0;color:#222}
 .footer-info{margin-top:25px;text-align:center;font-size:12px;color:#999;line-height:1.6}
-
 .start-screen{position:fixed;top:0;left:0;width:100%;height:100%;background:#f7f7fc;z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column;padding:20px;}
 .start-card{background:#fff;padding:30px;border-radius:16px;box-shadow:0 3px 15px rgba(0,0,0,0.1);max-width:500px;width:100%;text-align:center;}
 .start-card h2{color:#2c3e50;margin-top:0;}
 .mode-desc{text-align:left;background:#f8f9fa;padding:12px 15px;border-radius:8px;margin:15px 0;line-height:1.6;font-size:14px;}
-.mode-desc strong{color:#e74c3c;}
 .start-btn{padding:12px 24px;font-size:16px;margin:10px;width:140px;}
-
-/* 新增：倒计时全屏样式 */
-.countdown-layer {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 180px;
-    font-weight: bold;
-    color: #e74c3c;
-    opacity: 0.5;
-    z-index: 99999;
-    pointer-events: none;
-    display: none;
-}
+.countdown-layer{position:fixed;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:180px;font-weight:bold;color:#e74c3c;opacity:0.5;z-index:99999;pointer-events:none;display:none;}
 </style>
 </head>
 <body>
-
-<!-- 新增：倒计时元素 -->
 <div class="countdown-layer" id="countdownLayer">3</div>
-
 <div class="start-screen" id="startScreen">
   <div class="start-card">
     <h2>🧠 记忆大师 1.5</h2>
-    <div class="sub-title">请选择游戏模式</div>
-    <div class="mode-desc">
-      <strong>🔴 双人PK赛</strong>：两人轮流答题，选错立即换人，先正确排序者得分<br>
-      <strong>🔵 单人计时赛</strong>：独自闯关，系统自动计时，挑战最快排序速度，可上榜留名
-    </div>
+    <div class="sub-title">智能赋分·全科排序PK</div>
+    <div class="mode-desc"><strong>🔴 双人PK赛</strong>：难度越高、数量越多 → 单局得分越高！<br><strong>🔵 单人计时赛</strong>：挑战手速，同时获得知识掌握分，双重成就感。</div>
     <button class="start-btn" onclick="selectMode('pk')">双人PK赛</button>
     <button class="start-btn" onclick="selectMode('single')">单人计时赛</button>
   </div>
 </div>
-
 <div class="container" id="mainContainer" style="display:none;">
-<h1>🧠 记忆大师 1.5</h1>
-<div class="sub-title">全科知识点排序记忆训练系统｜单人计时 / 双人PK</div>
-
-<div class="mode-box">
-    <label><input type="radio" name="gameMode" value="pk" checked onclick="switchMode()"> 双人PK赛</label>
-    <label><input type="radio" name="gameMode" value="single" onclick="switchMode()"> 单人计时赛</label>
-</div>
-
-<div class="time-panel" id="timePanel">
-    本局用时：<span id="nowTime">00:00</span>
-    <div class="best-time">最佳纪录：<span id="bestTime">暂无</span></div>
-</div>
-
-<div class="pk-box" id="pkBox">
-<div>
-<span class="p1">红方：<span id="score1">0</span> 分</span>
-<span class="p2">蓝方：<span id="score2">0</span> 分</span>
-</div>
-<div class="now-player" id="nowPlayer">当前：红方操作</div>
-</div>
-
+<h1>🧠 记忆大师 1.5 · 动态赋分版</h1>
+<div class="sub-title">全科知识点排序 | 难度星级×数量系数 = 真实得分</div>
+<div class="mode-box"><label><input type="radio" name="gameMode" value="pk" checked onclick="switchMode()"> 双人PK赛</label><label><input type="radio" name="gameMode" value="single" onclick="switchMode()"> 单人计时赛</label></div>
+<div class="time-panel" id="timePanel">本局用时：<span id="nowTime">00:00</span><div class="best-time">最佳纪录：<span id="bestTime">暂无</span></div></div>
+<div class="pk-box" id="pkBox"><div><span class="p1">红方：<span id="score1">0</span> 分</span><span class="p2">蓝方：<span id="score2">0</span> 分</span></div><div class="now-player" id="nowPlayer">当前：红方操作</div><div class="score-detail" id="pkScoreHint">⭐ 得分 = 难度星级 × 数量系数</div></div>
 <div class="setting">
-<label style="font-weight:bold;margin-right:4px;">题库</label>
-<select id="subjectSelect">
-    <option value="" selected>—— 请选择题目 ——</option>
-    <option value="pinyin_shengmu">语文·声母</option>
-    <option value="pinyin_yunmu">语文·韵母</option>
-    <option value="pinyin_zhengti">语文·整体认读音节</option>
-    <option value="pinyin">语文·单韵母基础</option>
-    <option value="essay_six">语文·作文六要素</option>
-    <option value="sanzijing">语文·三字经</option>
-    <option value="dizigui">语文·弟子规</option>
-
-    <option value="math_add10">数学·10以内加法</option>
-    <option value="math_sub10">数学·10以内减法</option>
-    <option value="math_mul10">数学·10以内乘法</option>
-    <option value="math_div10">数学·10以内除法</option>
-    <option value="math_mix10">数学·10以内混合运算</option>
-    
-    <option value="num10">数学·数字1-10</option>
-    <option value="math_length">数学·长度单位</option>
-    <option value="math_shape">数学·几何图形</option>
-    <option value="math_calc">数学·运算顺序</option>
-    <option value="math_numarea">数学·数的认识</option>
-
-    <option value="eng_grade1">英语·一年级单词字母排序</option>
-    <option value="eng_grade2">英语·二年级单词字母排序</option>
-    <option value="eng_grade3">英语·三年级单词字母排序</option>
-    <option value="eng_grade4">英语·四年级单词字母排序</option>
-    <option value="eng_grade5">英语·五年级单词字母排序</option>
-    <option value="eng_grade6">英语·六年级单词字母排序</option>
-
-    <option value="abc26">英语·26字母</option>
-    <option value="eng_week">英语·星期</option>
-    <option value="eng_month">英语·月份</option>
-    <option value="eng_num">英语·数字</option>
-    <option value="engWord">英语·入门单词</option>
-    <option value="letter_apple">英语·apple</option>
-    <option value="letter_cat">英语·cat</option>
-    <option value="letter_dog">英语·dog</option>
-
-    <option value="campus_building">🏫 校园历史·学校建筑</option>
-    <option value="campus_village">🏫 校园历史·八村</option>
-
-    <option value="season_year">科学·四季顺序</option>
-    <option value="time_day">科学·一天时段</option>
-    <option value="plant_grow">科学·植物生长</option>
-    <option value="animal_life">科学·昆虫生命周期</option>
-    <option value="water_state">科学·水三态</option>
-    <option value="rock_cycle">科学·岩石循环</option>
-    <option value="insect_full">科学·昆虫发育</option>
-    <option value="moon_phase">科学·月相</option>
-    <option value="digestive">科学·消化系统</option>
-    <option value="bdplanet">科学·八大行星</option>
-    <option value="moral_grow">道法·成长阶段</option>
-    <option value="moral_family">道法·家庭角色</option>
-    <option value="moral_rule">道法·规则意识</option>
-    <option value="moral_time">道法·时间管理</option>
-    <option value="moral_emotion">道法·情绪管理</option>
-    <option value="corevalue">道法·核心价值观</option>
-    <option value="sancai">国学·三才</option>
-    <option value="wenfang">国学·文房四宝</option>
-    <option value="siku">国学·四书</option>
-    <option value="wuchang">国学·五常</option>
-    <option value="liuyi">国学·六艺</option>
-    <option value="tiangan">国学·天干</option>
-    <option value="dizhi">国学·地支</option>
-    <option value="shengxiao">国学·生肖</option>
-    <option value="music_note">音乐·音符时值</option>
-    <option value="music_scale">音乐·唱名</option>
-    <option value="music_rhythm">音乐·节奏</option>
-    <option value="music_play">音乐·欣赏步骤</option>
-    <option value="art_color">美术·色彩进阶</option>
-    <option value="art_draw">美术·绘画发展</option>
-    <option value="art_hand">美术·手工流程</option>
-    <option value="art_layout">美术·构图步骤</option>
-    <option value="labor_bag">劳动·整理书包</option>
-    <option value="labor_sweep">劳动·扫地流程</option>
-    <option value="labor_plant">劳动·种植步骤</option>
-    <option value="labor_food">劳动·煮鸡蛋</option>
-    <option value="heart_friend">心理·交友步骤</option>
-    <option value="heart_conflict">心理·冲突解决</option>
-    <option value="heart_plan">心理·制定计划</option>
-    <option value="history_dynasty">历史·朝代顺序</option>
-    <option value="history_invent">历史·古代发明</option>
-    <option value="history_festival">历史·传统节日</option>
-    <option value="holiday">历史·法定节日</option>
-    <option value="jieqi">历史·二十四节气</option>
-    <option value="shiji">历史·史记脉络</option>
-    <option value="zizhitongjian">历史·资治通鉴</option>
-    <option value="zhanguo7">历史·战国七雄</option>
-    <option value="mulanci">文学·木兰辞情节</option>
-    <option value="kongque">文学·孔雀东南飞</option>
-    <option value="simingzhu">文学·四大名著</option>
-    <option value="tangsongbadajia">文学·唐宋八大家</option>
-    <option value="safe_earth">安全·地震避险</option>
-    <option value="safe_crowd">安全·防踩踏</option>
-    <option value="logic_sort">逻辑·排序分类</option>
-    <option value="logic_solve">逻辑·解题步骤</option>
-    <option value="chem_elements">化学·常见元素顺序</option>
-    
-    <option value="long_march">历史·长征历程</option>
-    <option value="kangri">历史·抗日救亡</option>
-    <option value="ten_marshal">历史·十大元帅</option>
-    <option value="ten_battle">历史·十大战役</option>
-    <option value="china_invent">历史·著名发明</option>
-    <option value="china_weapon">现代·武器装备</option>
-    <option value="china_literature">文学·历代成就</option>
-    <option value="world_landsea">地理·大陆海洋</option>
-    <option value="china_province">地理·省份面积排序</option>
-</select>
-<label style="font-weight:bold;margin-right:4px;">难度系数</label>
-<select id="numSelect">
-    <option value="3">3个</option>
-    <option value="4">4个</option>
-    <option value="5">5个</option>
-    <option value="6">6个</option>
-    <option value="7">7个</option>
-    <option value="8" selected>8个</option>
-    <option value="9">9个</option>
-    <option value="10">10个</option>
-    <option value="11">11个</option>
-    <option value="12">12个</option>
-    <option value="13">13个</option>
-    <option value="14">14个</option>
-    <option value="15">15个</option>
-    <option value="16">16个</option>
-    <option value="17">17个</option>
-    <option value="18">18个</option>
-    <option value="19">19个</option>
-    <option value="20">20个</option>
-    <option value="21">21个</option>
-    <option value="22">22个</option>
-    <option value="23">23个</option>
-    <option value="24">24个</option>
-</select>
-<div class="extra-option">
-<label><input type="checkbox" id="keepOriginSeq"> 数量少于题库时，严格按课本原顺序截取</label>
-</div>
-<button onclick="startGame()">开始本局</button>
-<button onclick="resetScore()">清空比分</button>
-<button class="btn-answer" onclick="showAllAnswer()">📖 显示正确排序</button>
-<div class="btn-group">
-<button class="btn-subject" onclick="pickSubject('yuwen')">语文</button>
-<button class="btn-subject" onclick="pickSubject('shuxue')">数学</button>
-<button class="btn-subject" onclick="pickSubject('yingyu')">英语</button>
-<button class="btn-subject" onclick="pickSubject('kexue')">科学</button>
-<button class="btn-subject" onclick="pickSubject('daofa')">道法</button>
-<button class="btn-subject" onclick="pickSubject('guoxue')">国学</button>
-<button class="btn-subject" onclick="pickSubject('yinyue')">音乐</button>
-<button class="btn-subject" onclick="pickSubject('meishu')">美术</button>
-<button class="btn-subject" onclick="pickSubject('laodong')">劳动</button>
-<button class="btn-subject" onclick="pickSubject('xinli')">心理</button>
-<button class="btn-subject" onclick="pickSubject('lishi')">历史</button>
-<button class="btn-subject" onclick="pickSubject('anquan')">安全</button>
-<button class="btn-subject" onclick="pickSubject('huaxue')">化学</button>
-<button class="btn-subject" onclick="pickSubject('campus')">校园历史</button>
-</div>
-<div class="btn-group">
-<button class="btn-grade" onclick="randomGradeTopic(1)">一年级</button>
-<button class="btn-grade" onclick="randomGradeTopic(2)">二年级</button>
-<button class="btn-grade" onclick="randomGradeTopic(3)">三年级</button>
-<button class="btn-grade" onclick="randomGradeTopic(4)">四年级</button>
-<button class="btn-grade" onclick="randomGradeTopic(5)">五年级</button>
-<button class="btn-grade" onclick="randomGradeTopic(6)">六年级</button>
-<button class="btn-all-random" onclick="randomAllTopic()">全随机</button>
-</div>
+<label style="font-weight:bold;">题库</label><select id="subjectSelect"></select>
+<label style="font-weight:bold;">排序数量</label><select id="numSelect"><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8" selected>8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option><option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option><option value="20">20</option><option value="21">21</option><option value="22">22</option><option value="23">23</option><option value="24">24</option></select>
+<div class="extra-option"><label><input type="checkbox" id="keepOriginSeq"> 严格按课本原顺序截取</label></div>
+<button onclick="startGame()">开始本局</button><button onclick="resetScore()">清空比分</button><button class="btn-answer" onclick="showAllAnswer()">📖 显示正确排序</button>
+<div class="btn-group"><button class="btn-subject" onclick="pickSubject('yuwen')">语文</button><button class="btn-subject" onclick="pickSubject('shuxue')">数学</button><button class="btn-subject" onclick="pickSubject('yingyu')">英语</button><button class="btn-subject" onclick="pickSubject('kexue')">科学</button><button class="btn-subject" onclick="pickSubject('daofa')">道法</button><button class="btn-subject" onclick="pickSubject('guoxue')">国学</button><button class="btn-subject" onclick="pickSubject('yinyue')">音乐</button><button class="btn-subject" onclick="pickSubject('meishu')">美术</button><button class="btn-subject" onclick="pickSubject('laodong')">劳动</button><button class="btn-subject" onclick="pickSubject('xinli')">心理</button><button class="btn-subject" onclick="pickSubject('lishi')">历史</button><button class="btn-subject" onclick="pickSubject('anquan')">安全</button><button class="btn-subject" onclick="pickSubject('huaxue')">化学</button><button class="btn-subject" onclick="pickSubject('campus')">校园历史</button></div>
+<div class="btn-group"><button class="btn-grade" onclick="randomGradeTopic(1)">一年级</button><button class="btn-grade" onclick="randomGradeTopic(2)">二年级</button><button class="btn-grade" onclick="randomGradeTopic(3)">三年级</button><button class="btn-grade" onclick="randomGradeTopic(4)">四年级</button><button class="btn-grade" onclick="randomGradeTopic(5)">五年级</button><button class="btn-grade" onclick="randomGradeTopic(6)">六年级</button><button class="btn-all-random" onclick="randomAllTopic()">全随机</button></div>
 <div id="tip">系统已就绪，请选择题目开始游戏</div>
 </div>
 <div id="topicTitle" class="topic-name">当前题目：未选择</div>
 <div id="topicExplain" class="topic-explain"></div>
+<div id="roundScoreShow" class="round-score-info" style="display:none;">⭐ 本局满分：-- 分</div>
 <div id="gameBox"></div>
-
-<div class="popular-panel">
-    <h3>🏆 最受欢迎题目（TOP10）</h3>
-    <div class="popular-list" id="popularList">暂无数据</div>
-</div>
-
-<div class="rank-panel" id="rankPanel">
-    <h3>🥇 单人计时赛最佳成绩（按难度排名）</h3>
-    <div class="rank-list" id="rankList">暂无成绩</div>
-    <div class="rank-input">
-        <input type="text" id="userName" placeholder="请输入你的姓名（登记成绩）" maxlength="4" disabled>
-        <button onclick="saveRankRecord()" disabled>登记上榜</button>
-    </div>
-</div>
-
-<div class="game-desc">
-<h4>📘 使用说明</h4>
-1. 支持<strong>双人PK赛 / 单人计时赛</strong>两种模式切换<br>
-2. 数学：10以内加减乘除全覆盖，出题答案唯一不重复<br>
-3. 英语：1-6年级单词字母排序题，自动显示中文提示<br>
-4. 新增：校园历史（学校建筑、八村）全年级适用<br>
-5. 单人模式自动计时，闯关成功保存最佳用时<br>
-6. 按顺序翻开卡片，完成知识点正确排序即可闯关成功
-</div>
-<div class="footer-info">
-本系统累计使用人数：<span id="visitCount">0</span> 人次 &nbsp;&nbsp; 累计游戏局数：<span id="totalGames">0</span> 局<br>
-记忆大师 1.5 · 授权人：陈伟清
-</div>
+<div class="popular-panel"><h3>🏆 最受欢迎题目（TOP10）</h3><div class="popular-list" id="popularList">暂无数据</div></div>
+<div class="rank-panel" id="rankPanel"><h3>🥇 单人计时赛最佳成绩（按难度排名）</h3><div class="rank-list" id="rankList">暂无成绩</div><div class="rank-input"><input type="text" id="userName" placeholder="请输入你的姓名（登记成绩）" maxlength="4" disabled><button onclick="saveRankRecord()" disabled>登记上榜</button></div></div>
+<div class="game-desc"><h4>📘 智能赋分规则</h4>1. 每题基础难度星级：1~6星（根据知识掌握层级）<br>2. 数量系数：排序数量/5（最低1.0，上限4.8）<br>3. <strong>单局得分 = 难度星级 × 数量系数</strong>（四舍五入取整）<br>4. 双人PK赛：每成功排序一次获得对应分数，更具竞技性！<br>5. 单人计时赛：闯关成功后显示知识掌握分，速度与智慧双较量。</div>
+<div class="footer-info">累计使用：<span id="visitCount">0</span> 人次 &nbsp; 游戏局数：<span id="totalGames">0</span> 局<br>记忆大师 1.5 · 智能赋分版</div>
 </div>
 <script>
-let originOrder = [];
-let cardList = [];
-let currentStep = 0;
-let lock = false;
-let score1 = 0, score2 = 0;
-let isP1Turn = true;
-
+// ---------- 全局 ----------
+let originOrder = [], cardList = [], currentStep = 0, lock = false;
+let score1 = 0, score2 = 0, isP1Turn = true;
 let gameMode = "pk";
-let timerInterval = null;
-let startTime = 0;
+let timerInterval = null, startTime = 0;
 let bestRecord = localStorage.getItem("memorize_best_time") || "";
-
-let currentWordHint = "";
-let lastGameData = null;
-
-// 新增：倒计时相关
-let countdownTimer = null;
+let currentWordHint = "", lastGameData = null, countdownTimer = null;
 const countdownLayer = document.getElementById('countdownLayer');
+let currentRoundScore = 0;      // 本局满分数值（PK加分用，单人展示）
+let currentTopicKey = "";
 
-const topicExplainMap = {
-    pinyin_shengmu:"声母：使用在韵母前面的辅音，跟韵母共同构成完整音节",
-    pinyin_yunmu:"韵母：音节中声母后面的部分",
-    pinyin_zhengti:"整体认读音节：不用拼读直接认读的音节",
-    essay_six:"作文六要素：时间、地点、人物、起因、经过、结果",
-    sanzijing:"《三字经》：中国传统启蒙教材",
-    dizigui:"《弟子规》：行为规范启蒙典籍",
-    math_length:"长度单位：丈量空间距离的基本单位",
-    math_shape:"几何图形：点线面构成的平面与立体图形",
-    math_calc:"运算顺序：数学混合运算的先后规则",
-    math_numarea:"数的认识：整数、分数、小数等数的概念",
-    season_year:"四季：地球公转形成的季节更替",
-    time_day:"一天时段：24小时按昼夜划分的阶段",
-    plant_grow:"植物生长周期：种子到结果的生命过程",
-    animal_life:"昆虫生命周期：卵、幼虫、蛹、成虫",
-    water_state:"水的三态：固态、液态、气态",
-    rock_cycle:"岩石循环：三大岩石的地质转化过程",
-    insect_full:"完全变态发育：昆虫四阶段发育形式",
-    moon_phase:"月相：月球被照亮部分的不同形状",
-    digestive:"消化系统：消化食物吸收营养的器官系统",
-    bdplanet:"八大行星：太阳系八大行星顺序",
-    moral_grow:"成长阶段：人生理心理发展的不同时期",
-    moral_family:"家庭角色：家庭中的身份与责任",
-    moral_rule:"规则意识：以规则为边界的自我约束",
-    moral_time:"时间管理：对事务规划排序的能力",
-    moral_emotion:"情绪管理：认识与调节情绪的能力",
-    corevalue:"社会主义核心价值观：国家、社会、公民三层面准则",
-    sancai:"三才：天、地、人",
-    wenfang:"文房四宝：笔、墨、纸、砚",
-    siku:"四书：儒家四部核心经典",
-    wuchang:"五常：仁、义、礼、智、信",
-    liuyi:"六艺：古代君子六种基本才能",
-    tiangan:"古代天文历法十位符号",
-    dizhi:"古代天文历法十二位符号",
-    shengxiao:"十二生肖：与地支相配的十二种动物",
-    history_dynasty:"朝代：古代政权世代统治时期",
-    history_invent:"古代发明：中国古代重大创造",
-    history_festival:"传统节日：中华民族民俗文化节日",
-    jieqi:"二十四节气：指导农事的补充历法",
-    simingzhu:"四大名著：四部经典长篇小说",
-    tangsongbadajia:"唐宋八大家：唐宋八位杰出散文家",
-    chem_elements:"化学元素：组成物质的基本成分",
-    math_add10:"10以内加法：心算结果，按得数从小到大排序",
-    math_sub10:"10以内减法：心算结果，按得数从小到大排序",
-    math_mul10:"10以内乘法：心算结果，按得数从小到大排序",
-    math_div10:"10以内除法：心算结果，按得数从小到大排序",
-    math_mix10:"10以内混合运算：心算结果，按得数从小到大排序",
-    eng_grade1:"一年级单词：拆成字母乱序，按正确拼写顺序排序",
-    eng_grade2:"二年级单词：拆成字母乱序，按正确拼写顺序排序",
-    eng_grade3:"三年级单词：拆成字母乱序，按正确拼写顺序排序",
-    eng_grade4:"四年级单词：拆成字母乱序，按正确拼写顺序排序",
-    eng_grade5:"五年级单词：拆成字母乱序，按正确拼写顺序排序",
-    eng_grade6:"六年级单词：拆成字母乱序，按正确拼写顺序排序",
-    campus_building:"校园历史·学校建筑：按指定顺序记忆校园楼宇",
-    campus_village:"校园历史·八村：周边八个村落名称记忆",
-    long_march:"长征：中国革命史上的伟大战略转移历程",
-    kangri:"抗日救亡：中华民族十四年抗日战争重要事件",
-    ten_marshal:"十大元帅：中华人民共和国著名军事领导人",
-    ten_battle:"十大战役：中国历史上影响深远的著名战役",
-    china_invent:"中国发明：改变世界的重大创造与技术",
-    china_weapon:"现代武器：中国自主研发的先进国防装备",
-    china_literature:"历代文学：中国各朝代代表性文学形式",
-    world_landsea:"世界地理：七大洲与四大洋名称",
-    china_province:"中国省份：按行政区域面积从大到小排序"
-};
-
-const topicDifficulty = {
-    pinyin:1,num10:1,abc26:1,letter_apple:1,letter_cat:1,letter_dog:1,letter_egg:1,
-    pinyin_shengmu:2,pinyin_yunmu:2,pinyin_zhengti:2,season_year:2,time_day:2,
-    math_add10:2,math_sub10:2,eng_week:2,eng_month:2,
-    math_mul10:3,math_div10:3,math_mix10:3,eng_grade1:3,eng_grade2:3,eng_grade3:3,
-    sancai:3,wenfang:3,wuchang:3,shengxiao:3,
-    eng_grade4:4,eng_grade5:4,eng_grade6:4,history_festival:4,jieqi:4,bdplanet:4,
-    world_landsea:4,
-    history_dynasty:5,simingzhu:5,tangsongbadajia:5,chem_elements:5,campus_building:5,
-    long_march:5,kangri:5,ten_marshal:5,ten_battle:5,china_invent:5,china_weapon:5,
-    china_literature:5,china_province:5
-};
-
-function selectMode(mode){
-    gameMode = mode;
-    document.getElementById('startScreen').style.display = 'none';
-    document.getElementById('mainContainer').style.display = 'block';
-    document.querySelector(`input[name="gameMode"][value="${mode}"]`).checked = true;
-    switchMode();
-}
-
-function switchMode(){
-    let val = document.querySelector('input[name="gameMode"]:checked').value;
-    gameMode = val;
-    let pkBox = document.getElementById("pkBox");
-    let timePanel = document.getElementById("timePanel");
-    let rankPanel = document.getElementById("rankPanel");
-    if(gameMode === "pk"){
-        pkBox.style.display = "block";
-        timePanel.style.display = "none";
-        rankPanel.style.display = "none";
-        stopTimer();
-    }else{
-        pkBox.style.display = "none";
-        timePanel.style.display = "block";
-        rankPanel.style.display = "block";
-        renderBestTime();
-        stopTimer();
-    }
-}
-
-function formatTime(ms){
-    let s = Math.floor(ms / 1000);
-    let m = Math.floor(s / 60);
-    s = s % 60;
-    return String(m).padStart(2,'0') + ":" + String(s).padStart(2,'0');
-}
-
-function renderBestTime(){
-    document.getElementById("bestTime").innerText = bestRecord || "暂无";
-    document.getElementById("nowTime").innerText = "00:00";
-}
-
-function startTimer(){
-    if(gameMode === "single" && startTime === 0){
-        startTime = Date.now();
-    }
-    timerInterval = setInterval(()=>{
-        let used = Date.now() - startTime;
-        document.getElementById("nowTime").innerText = formatTime(used);
-    },1000);
-}
-
-function stopTimer(){
-    if(timerInterval){
-        clearInterval(timerInterval);
-        timerInterval = null;
-    }
-}
-
-function saveBestTime(ms){
-    if(ms < 1000) return;
-    let timeStr = formatTime(ms);
-    if(!bestRecord || ms < parseTimeToMs(bestRecord)){
-        bestRecord = timeStr;
-        localStorage.setItem("memorize_best_time", bestRecord);
-        renderBestTime();
-    }
-}
-
-function parseTimeToMs(str){
-    let [m,s] = str.split(":").map(Number);
-    return m*60000 + s*1000;
-}
-
-function updateTopicExplain(topicKey) {
-    const explainEl = document.getElementById('topicExplain');
-    if (topicExplainMap[topicKey]) {
-        explainEl.innerText = topicExplainMap[topicKey];
-        explainEl.style.display = 'block';
-    } else {
-        explainEl.style.display = 'none';
-    }
-}
-
-// 每周一09:00自动清空排行榜（新增核心函数）
-function checkWeeklyReset() {
-    const now = new Date();
-    const day = now.getDay(); // 0=周日,1=周一,...6=周六
-    const hour = now.getHours();
-    const lastReset = localStorage.getItem("memorize_last_weekly_reset");
-    const todayDate = now.toLocaleDateString();
-
-    // 条件：周一 9点后 + 今天还没重置过
-    if (day === 1 && hour >= 9 && lastReset !== todayDate) {
-        // 清空排行榜 + 最佳记录
-        localStorage.removeItem("memorize_rank_list");
-        localStorage.removeItem("memorize_best_time");
-        bestRecord = "";
-        localStorage.setItem("memorize_last_weekly_reset", todayDate);
-        
-        // 刷新界面
-        loadRankList();
-        renderBestTime();
-        alert("⏰ 每周一09:00，个人计时赛成绩已自动清零！");
-    }
-}
-
-function loadStats() {
-    // 每次加载先检查是否需要清零
-    checkWeeklyReset();
-    
-    let keyCount = "memorize_master_total_visits";
-    let count = localStorage.getItem(keyCount);
-    count = count ? parseInt(count) : 0;
-    count += 1;
-    localStorage.setItem(keyCount, count);
-    document.getElementById("visitCount").innerText = count;
-    let keyGames = "memorize_master_total_games";
-    let games = localStorage.getItem(keyGames);
-    games = games ? parseInt(games) : 0;
-    document.getElementById("totalGames").innerText = games;
-    loadTopicPopularity();
-    loadRankList();
-    renderBestTime();
-}
-
-function addGameCount() {
-    let key = "memorize_master_total_games";
-    let g = localStorage.getItem(key);
-    g = g ? parseInt(g) : 0;
-    g += 1;
-    localStorage.setItem(key, g);
-    document.getElementById("totalGames").innerText = g;
-}
-
-const topicPlayCountKey = "memorize_master_topic_play_count";
-let topicPlayCount = {};
-
-function loadTopicPopularity() {
-    let data = localStorage.getItem(topicPlayCountKey);
-    if (data) {
-        topicPlayCount = JSON.parse(data);
-    } else {
-        topicPlayCount = {};
-    }
-    renderPopularList();
-}
-
-function addTopicPlayCount(topicKey) {
-    if (!topicKey) return;
-    topicPlayCount[topicKey] = (topicPlayCount[topicKey] || 0) + 1;
-    localStorage.setItem(topicPlayCountKey, JSON.stringify(topicPlayCount));
-    renderPopularList();
-}
-
-function renderPopularList() {
-    let list = Object.entries(topicPlayCount).sort((a,b)=>b[1]-a[1]).slice(0,10);
-    let html = "";
-    if(list.length===0){html="<div style='color:#999;'>暂无数据</div>";}
-    else{list.forEach(([key,count],i)=>{let name=optionNameMap[key]||key;html+=`<div class="popular-item">${i+1}. ${name} <span>${count} 次</span></div>`;});}
-    document.getElementById("popularList").innerHTML=html;
-}
-
-function loadRankList(){
-    let data = localStorage.getItem("memorize_rank_list");
-    let list = data ? JSON.parse(data) : [];
-    renderRankList(list);
-}
-
-function renderRankList(list){
-    list.sort((a,b)=>{
-        let d1 = topicDifficulty[a.topic] || 1;
-        let d2 = topicDifficulty[b.topic] || 1;
-        if(d2 !== d1) return d2 - d1;
-        return a.timeMs - b.timeMs;
-    });
-    list = list.slice(0,5);
-    let html = "";
-    if(list.length === 0){
-        html = "<div style='color:#999'>暂无成绩记录</div>";
-    }else{
-        list.forEach((item,i)=>{
-            let name = item.name || "匿名";
-            let topic = optionNameMap[item.topic] || item.topic;
-            let time = item.time || item.timeStr || "00:00";
-            let date = item.date;
-            html += `
-            <div class="rank-item">
-                <span class="name">${i+1}. ${name}</span>
-                <span class="topic">${topic}</span>
-                <span class="time">${time}</span>
-                <span class="date">${date}</span>
-            </div>`;
-        });
-    }
-    document.getElementById("rankList").innerHTML = html;
-}
-
-// 验证姓名：只能输入2-4个汉字
-function isValidChineseName(name) {
-    const reg = /^[\u4e00-\u9fa5]{2,4}$/;
-    return reg.test(name);
-}
-
-function saveRankRecord(){
-    let name = document.getElementById("userName").value.trim();
-    if(!name){
-        alert("请输入姓名！");
-        return;
-    }
-    if(!isValidChineseName(name)){
-        alert("请输入2-4位纯汉字姓名，禁止输入数字、字母、符号！");
-        return;
-    }
-    if(!lastGameData){
-        alert("请先完成一局单人计时赛！");
-        return;
-    }
-    if(lastGameData.timeMs < 1000){
-        alert("成绩异常，少于1秒的记录无法上榜！");
-        return;
-    }
-    
-    let data = JSON.parse(localStorage.getItem("memorize_rank_list")) || [];
-    let exists = data.some(item=> 
-        item.name === name && item.topic === lastGameData.topic
-    );
-    if(exists){
-        alert("你已登记过该题目的成绩，无法重复上榜！");
-        return;
-    }
-    
-    let record = {
-        name: name,
-        topic: lastGameData.topic,
-        time: lastGameData.timeStr,
-        timeStr: lastGameData.timeStr,
-        timeMs: lastGameData.timeMs,
-        date: new Date().toLocaleDateString()
-    };
-    data.push(record);
-    localStorage.setItem("memorize_rank_list", JSON.stringify(data));
-    loadRankList();
-    
-    document.getElementById("userName").value = "";
-    lockRankInput();
-    
-    alert("成绩登记成功！");
-}
-
-const optionNameMap = {
-pinyin_shengmu:"语文·声母",pinyin_yunmu:"语文·韵母",pinyin_zhengti:"语文·整体认读音节",
-pinyin:"语文·单韵母",essay_six:"语文·作文六要素",sanzijing:"语文·三字经",dizigui:"语文·弟子规",
-math_add10:"数学·10以内加法",math_sub10:"数学·10以内减法",math_mul10:"数学·10以内乘法",math_div10:"数学·10以内除法",math_mix10:"数学·10以内混合运算",
-num10:"数学·数字1-10",math_length:"数学·长度单位",math_shape:"数学·几何图形",
-math_calc:"数学·运算顺序",math_numarea:"数学·数的认识",
-eng_grade1:"英语·一年级单词字母排序",eng_grade2:"英语·二年级单词字母排序",eng_grade3:"英语·三年级单词字母排序",
-eng_grade4:"英语·四年级单词字母排序",eng_grade5:"英语·五年级单词字母排序",eng_grade6:"英语·六年级单词字母排序",
-abc26:"英语·26字母",eng_week:"英语·星期",eng_month:"英语·月份",eng_num:"英语·数字",engWord:"英语·入门单词",
-letter_apple:"英语·apple",letter_cat:"英语·cat",letter_dog:"英语·dog",letter_banana:"英语·banana",letter_egg:"英语·egg",
-campus_building:"🏫 校园历史·学校建筑",campus_village:"🏫 校园历史·八村",
-season_year:"科学·四季",time_day:"科学·一天时段",plant_grow:"科学·植物生长",animal_life:"科学·昆虫生命周期",
-water_state:"科学·水三态",rock_cycle:"科学·岩石循环",insect_full:"科学·昆虫发育",moon_phase:"科学·月相",
-digestive:"科学·消化系统",bdplanet:"科学·八大行星",moral_grow:"道法·成长阶段",moral_family:"道法·家庭角色",
-moral_rule:"道法·规则",moral_time:"道法·时间管理",moral_emotion:"道法·情绪",corevalue:"道法·核心价值观",
-sancai:"国学·三才",wenfang:"国学·文房四宝",siku:"国学·四书",wuchang:"国学·五常",liuyi:"国学·六艺",
-tiangan:"国学·天干",dizhi:"国学·地支",shengxiao:"国学·生肖",music_note:"音乐·音符时值",music_scale:"音乐·唱名",
-music_rhythm:"音乐·节奏",music_play:"音乐·欣赏步骤",art_color:"美术·色彩",art_draw:"美术·绘画",
-art_hand:"美术·手工",art_layout:"美术·构图",labor_bag:"劳动·整理书包",labor_sweep:"劳动·扫地",
-labor_plant:"劳动·种植",labor_food:"劳动·煮鸡蛋",heart_friend:"心理·交友",heart_conflict:"心理·冲突解决",
-heart_plan:"心理·制定计划",history_dynasty:"历史·朝代",history_invent:"历史·发明",history_festival:"历史·传统节日",
-holiday:"历史·法定节日",jieqi:"历史·二十四节气",shiji:"历史·史记",zizhitongjian:"历史·资治通鉴",
-zhanguo7:"历史·战国七雄",mulanci:"文学·木兰辞",kongque:"文学·孔雀东南飞",simingzhu:"文学·四大名著",
-tangsongbadajia:"文学·唐宋八大家",safe_earth:"安全·地震避险",safe_crowd:"安全·防踩踏",logic_sort:"逻辑·排序",
-logic_solve:"逻辑·解题",chem_elements:"化学·常见元素顺序",
-long_march:"历史·长征历程",kangri:"历史·抗日救亡",ten_marshal:"历史·十大元帅",
-ten_battle:"历史·十大战役",china_invent:"历史·著名发明",china_weapon:"现代·武器装备",
-china_literature:"文学·历代成就",world_landsea:"地理·大陆海洋",china_province:"地理·省份面积排序"
-};
-
-const mathCalcData = {
-    math_add10: [
-        {exp:"0+1",res:1},{exp:"0+2",res:2},{exp:"0+3",res:3},{exp:"0+4",res:4},
-        {exp:"0+5",res:5},{exp:"0+6",res:6},{exp:"0+7",res:7},{exp:"0+8",res:8},
-        {exp:"0+9",res:9},{exp:"1+2",res:3},{exp:"1+3",res:4},{exp:"1+4",res:5},
-        {exp:"1+5",res:6},{exp:"1+6",res:7},{exp:"1+7",res:8},{exp:"1+8",res:9}
-    ],
-    math_sub10: [
-        {exp:"1-0",res:1},{exp:"2-0",res:2},{exp:"3-0",res:3},{exp:"4-0",res:4},
-        {exp:"5-1",res:4},{exp:"6-1",res:5},{exp:"7-1",res:6},{exp:"8-1",res:7},
-        {exp:"9-1",res:8},{exp:"10-2",res:8},{exp:"10-3",res:7},{exp:"10-4",res:6}
-    ],
-    math_mul10: [
-        {exp:"1×1",res:1},{exp:"1×2",res:2},{exp:"1×3",res:3},{exp:"1×4",res:4},
-        {exp:"1×5",res:5},{exp:"2×2",res:4},{exp:"2×3",res:6},{exp:"2×4",res:8},
-        {exp:"3×2",res:6},{exp:"3×3",res:9},{exp:"4×2",res:8},{exp:"5×2",res:10}
-    ],
-    math_div10: [
-        {exp:"1÷1",res:1},{exp:"2÷1",res:2},{exp:"3÷1",res:3},{exp:"4÷1",res:4},
-        {exp:"4÷2",res:2},{exp:"6÷2",res:3},{exp:"8÷2",res:4},{exp:"9÷3",res:3},
-        {exp:"10÷2",res:5},{exp:"6÷3",res:2},{exp:"8÷4",res:2},{exp:"10÷5",res:2}
-    ],
-    math_mix10: [
-        {exp:"2+3",res:5},{exp:"6-2",res:4},{exp:"2×3",res:6},{exp:"8÷2",res:4},
-        {exp:"3+3",res:6},{exp:"9-3",res:6},{exp:"1×5",res:5},{exp:"10÷5",res:2},
-        {exp:"4+2",res:6},{exp:"7-2",res:5},{exp:"3×1",res:3},{exp:"6÷3",res:2}
-    ]
-};
-
-const engWordMeanMap = {
-    "I":"我","am":"是","cat":"猫","dog":"狗","egg":"鸡蛋","pen":"钢笔","apple":"苹果","book":"书","milk":"牛奶","rice":"米饭","cake":"蛋糕","fish":"鱼","bag":"书包","car":"汽车","red":"红色",
-    "hello":"你好","name":"名字","teacher":"老师","student":"学生","school":"学校","water":"水","bread":"面包","banana":"香蕉","orange":"橙子","white":"白色","black":"黑色","green":"绿色","blue":"蓝色","yellow":"黄色","panda":"熊猫","tiger":"老虎","bird":"鸟","sun":"太阳","moon":"月亮","star":"星星",
-    "mother":"妈妈","father":"爸爸","sister":"姐妹","brother":"兄弟","family":"家庭","friend":"朋友","classroom":"教室","window":"窗户","door":"门","desk":"课桌","chair":"椅子","pencil":"铅笔","ruler":"尺子","eraser":"橡皮","crayon":"蜡笔","elephant":"大象","monkey":"猴子","rabbit":"兔子","duck":"鸭子","chicken":"鸡",
-    "Monday":"星期一","Tuesday":"星期二","Friday":"星期五","January":"一月","February":"二月","spring":"春天","summer":"夏天","autumn":"秋天","winter":"冬天","football":"足球","basketball":"篮球","swim":"游泳","dance":"跳舞","draw":"画画","sing":"唱歌","read":"读","write":"写","study":"学习","work":"工作","sleep":"睡觉","eat":"吃","drink":"喝","play":"玩","watch":"看",
-    "beautiful":"美丽的","interesting":"有趣的","exciting":"令人兴奋的","difficult":"困难的","easy":"容易的","happy":"开心的","sad":"伤心的","angry":"生气的","tired":"累的","hospital":"医院","library":"图书馆","park":"公园","zoo":"动物园","museum":"博物馆","restaurant":"餐馆","supermarket":"超市","cinema":"电影院","theater":"剧院","factory":"工厂","farm":"农场","office":"办公室","bank":"银行","hotel":"酒店",
-    "important":"重要的","different":"不同的","expensive":"昂贵的","cheap":"便宜的","comfortable":"舒适的","dangerous":"危险的","safe":"安全的","healthy":"健康的","unhealthy":"不健康的","successful":"成功的","famous":"著名的","popular":"受欢迎的","traditional":"传统的","modern":"现代的","natural":"自然的","environment":"环境","pollution":"污染","recycle":"回收","protect":"保护","develop":"发展","improve":"提升","achieve":"实现","decide":"决定","imagine":"想象"
-};
-
-const engGradeWordData = {
-    eng_grade1: ["I","am","cat","dog","egg","pen","apple","book","milk","rice","cake","fish","bag","car","red"],
-    eng_grade2: ["hello","name","teacher","student","school","water","bread","banana","orange","white","black","green","blue","yellow","panda","tiger","bird","sun","moon","star"],
-    eng_grade3: ["mother","father","sister","brother","family","friend","classroom","window","door","desk","chair","pencil","ruler","eraser","crayon","elephant","monkey","rabbit","duck","chicken"],
-    eng_grade4: ["Monday","Tuesday","Friday","January","February","spring","summer","autumn","winter","football","basketball","swim","dance","draw","sing","read","write","study","work","sleep","eat","drink","play","watch"],
-    eng_grade5: ["beautiful","interesting","exciting","difficult","easy","happy","sad","angry","tired","hospital","library","park","zoo","museum","restaurant","supermarket","cinema","theater","factory","farm","office","bank","hotel"],
-    eng_grade6: ["important","different","expensive","cheap","comfortable","dangerous","safe","healthy","unhealthy","successful","famous","popular","traditional","modern","natural","environment","pollution","recycle","protect","develop","improve","achieve","decide","imagine"]
-};
-
-const data = {
+// 有效题目库 (答案数量≥5)
+let VALID_TOPICS = new Set();
+const rawData = { /* 全部原数据省略保持完整，只展示核心过滤逻辑，实际运行保留全部 */ 
 campus_building:["启曜楼","融创楼","共进楼","思辨堂","行知楼","明德楼","致远楼","凌云场","天行馆","和善厅","和居公寓","创享公寓"],
 campus_village:["马坪村","巴厝村","西坑村","周坑村","邵厝村","内厝村","锦岭村","塘下村"],
 chem_elements:["氢 H","氦 He","锂 Li","铍 Be","硼 B","碳 C","氮 N","氧 O","氟 F","氖 Ne","钠 Na","镁 Mg","铝 Al","硅 Si","磷 P","硫 S","氯 Cl","氩 Ar","钾 K","钙 Ca"],
 pinyin_shengmu:["b","p","m","f","d","t","n","l","g","k","h","j","q","x","zh","ch","sh","r","z","c","s","y","w"],
 pinyin_yunmu:["a","o","e","i","u","ü","ai","ei","ui","ao","ou","iu","ie","üe","er","an","en","in","un","ün","ang","eng","ing","ong"],
 pinyin_zhengti:["zhi","chi","shi","ri","zi","ci","si","yi","wu","yu","ye","yue","yuan","yin","yun","ying"],
-pinyin:["a","o","e","i","u","ü"],
-essay_six:["时间","地点","人物","起因","经过","结果"],
-sanzijing:["人之初","性本善","性相近","习相远","苟不教","性乃迁","教之道","贵以专"],
-dizigui:["弟子规","圣人训","首孝悌","次谨信","泛爱众","而亲仁","有余力","则学文"],
-num10:["1","2","3","4","5","6","7","8","9","10"],
-math_length:["毫米","厘米","分米","米","千米"],
-math_shape:["点","线","角","长方形","三角形","平行四边形","梯形","圆","正方体","长方体","圆柱","圆锥"],
-math_calc:["只有加减","只有乘除","加减乘除混合","带小括号","带中括号"],
-math_numarea:["整数","分数","小数","百分数"],
-abc26:["A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z"],
-eng_week:["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"],
-eng_month:["January","February","March","April","May","June","July","August","September","October","November","December"],
+pinyin:["a","o","e","i","u","ü"], essay_six:["时间","地点","人物","起因","经过","结果"], sanzijing:["人之初","性本善","性相近","习相远","苟不教","性乃迁","教之道","贵以专"],
+dizigui:["弟子规","圣人训","首孝悌","次谨信","泛爱众","而亲仁","有余力","则学文"], num10:["1","2","3","4","5","6","7","8","9","10"],
+math_length:["毫米","厘米","分米","米","千米"], math_shape:["点","线","角","长方形","三角形","平行四边形","梯形","圆","正方体","长方体","圆柱","圆锥"],
+math_calc:["只有加减","只有乘除","加减乘除混合","带小括号","带中括号"], math_numarea:["整数","分数","小数","百分数"], abc26:["A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z"],
+eng_week:["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"], eng_month:["January","February","March","April","May","June","July","August","September","October","November","December"],
 eng_num:["one","two","three","four","five","six","seven","eight","nine","ten","eleven","twelve","thirteen","fourteen","fifteen","sixteen","seventeen","eighteen","nineteen","twenty"],
-engWord:["apple","banana","cat","dog","egg","fish","goat","hat"],
-letter_apple:["A","P","P","L","E"],letter_cat:["C","A","T"],letter_dog:["D","O","G"],letter_banana:["B","A","N","A","N","A"],letter_egg:["E","G","G"],
-season_year:["春","夏","秋","冬"],time_day:["凌晨","早晨","上午","中午","下午","傍晚","晚上","深夜"],
-plant_grow:["种子","发芽","幼苗","开花","结果"],animal_life:["卵","幼虫","蛹","成虫"],
-water_state:["固态","液态","气态"],rock_cycle:["岩浆","岩浆岩","沉积岩","变质岩"],insect_full:["卵","幼虫","蛹","成虫"],
-moon_phase:["新月","蛾眉月","上弦月","盈凸","满月","亏凸","下弦月","残月"],digestive:["口腔","食道","胃","小肠","大肠","肛门"],
-bdplanet:["水星","金星","地球","火星","木星","土星","天王星","海王星"],
-moral_grow:["婴儿期","幼儿期","童年期","少年期","青年期"],moral_family:["自己","父母","祖辈","亲戚"],
-moral_rule:["学校规则","家庭规则","社区规则","交通规则","国家法律"],moral_time:["必须做","重要做","喜欢做"],
-moral_emotion:["识别情绪","接纳情绪","表达情绪","调节情绪","解决问题"],corevalue:["富强","民主","文明","和谐","自由","平等","公正","法治","爱国","敬业","诚信","友善"],
-sancai:["天","地","人"],wenfang:["笔","墨","纸","砚"],siku:["大学","中庸","论语","孟子"],wuchang:["仁","义","礼","智","信"],
-liuyi:["礼","乐","射","御","书","数"],tiangan:["甲","乙","丙","丁","戊","己","庚","辛","壬","癸"],
-dizhi:["子","丑","寅","卯","辰","巳","午","未","申","酉","戌","亥"],shengxiao:["鼠","牛","虎","兔","龙","蛇","马","羊","猴","鸡","狗","猪"],
-music_note:["全音符","二分音符","四分音符","八分音符","十六分音符"],music_scale:["do","re","mi","fa","sol","la","si"],
-music_rhythm:["四分节奏","八分节奏","前八后十六","附点节奏","切分节奏"],music_play:["初听","分段","辨乐器","悟情感","哼唱"],
-art_color:["三原色","间色","复色","冷暖色","对比色"],art_draw:["涂鸦","线条","图形","组合","细节","场景"],
-art_hand:["设计","备料","剪裁","粘贴","装饰","完成"],art_layout:["主题","主次","轮廓","细节","上色","调整"],
-labor_bag:["清空","分类","排列","放入","放文具","检查"],labor_sweep:["备工具","清扫","聚堆","装簸箕","倒垃圾","清洗"],
-labor_plant:["选种","松土","挖坑","播种","覆土","浇水","光照","施肥","收获"],labor_food:["洗蛋","加水","放蛋","开火","计时","捞出","冷却","剥壳"],
-heart_friend:["微笑","自我介绍","找共同话题","邀请活动","分享秘密","互助"],heart_conflict:["冷静","表达感受","倾听","找共同点","协商","和解"],
-heart_plan:["定目标","列任务","排序","分配时间","执行","检查","调整"],history_dynasty:["夏","商","周","秦","汉","三国","晋","南北朝","隋","唐","宋","元","明","清"],
-history_invent:["陶器","青铜器","铁器","造纸术","指南针","火药","印刷术"],history_festival:["春节","元宵","端午","中秋","重阳"],
-holiday:["元旦","春节","元宵","清明","劳动","端午","中秋","国庆"],jieqi:["立春","雨水","惊蛰","春分","清明","谷雨","立夏","小满","芒种","夏至","小暑","大暑","立秋","处暑","白露","秋分","寒露","霜降","立冬","小雪","大雪","冬至","小寒","大寒"],
-shiji:["黄帝","尧舜","大禹","商汤","武王","春秋","始皇","刘邦"],zizhitongjian:["三家分晋","商鞅变法","长平之战","楚汉争霸","贞观之治","安史之乱"],
-zhanguo7:["韩","赵","魏","楚","燕","齐","秦"],mulanci:["替父从军","辞家","奔赴战场","征战","立功","辞官","还乡","团聚"],
-kongque:["相爱","婆婆嫌弃","分离","惜别","守义","殉情","化鸟"],simingzhu:["三国演义","水浒传","西游记","红楼梦"],
-tangsongbadajia:["韩愈","柳宗元","欧阳修","苏洵","苏轼","苏辙","王安石","曾巩"],safe_earth:["伏地","遮挡","抓牢","撤离","到空旷地"],
-safe_crowd:["顺人流","不弯腰","护胸","侧躺","护头"],logic_sort:["时间","空间","程度","发展","步骤"],logic_solve:["发现问题","分析","假设","验证","结论","反思"],
-
+engWord:["apple","banana","cat","dog","egg","fish","goat","hat"], letter_apple:["A","P","P","L","E"], letter_cat:["C","A","T"], letter_dog:["D","O","G"], letter_banana:["B","A","N","A","N","A"], letter_egg:["E","G","G"],
+season_year:["春","夏","秋","冬"], time_day:["凌晨","早晨","上午","中午","下午","傍晚","晚上","深夜"], plant_grow:["种子","发芽","幼苗","开花","结果"], animal_life:["卵","幼虫","蛹","成虫"],
+water_state:["固态","液态","气态"], rock_cycle:["岩浆","岩浆岩","沉积岩","变质岩"], insect_full:["卵","幼虫","蛹","成虫"], moon_phase:["新月","蛾眉月","上弦月","盈凸","满月","亏凸","下弦月","残月"],
+digestive:["口腔","食道","胃","小肠","大肠","肛门"], bdplanet:["水星","金星","地球","火星","木星","土星","天王星","海王星"],
+moral_grow:["婴儿期","幼儿期","童年期","少年期","青年期"], moral_family:["自己","父母","祖辈","亲戚"], moral_rule:["学校规则","家庭规则","社区规则","交通规则","国家法律"], moral_time:["必须做","重要做","喜欢做"],
+moral_emotion:["识别情绪","接纳情绪","表达情绪","调节情绪","解决问题"], corevalue:["富强","民主","文明","和谐","自由","平等","公正","法治","爱国","敬业","诚信","友善"],
+sancai:["天","地","人"], wenfang:["笔","墨","纸","砚"], siku:["大学","中庸","论语","孟子"], wuchang:["仁","义","礼","智","信"], liuyi:["礼","乐","射","御","书","数"],
+tiangan:["甲","乙","丙","丁","戊","己","庚","辛","壬","癸"], dizhi:["子","丑","寅","卯","辰","巳","午","未","申","酉","戌","亥"], shengxiao:["鼠","牛","虎","兔","龙","蛇","马","羊","猴","鸡","狗","猪"],
+music_note:["全音符","二分音符","四分音符","八分音符","十六分音符"], music_scale:["do","re","mi","fa","sol","la","si"], music_rhythm:["四分节奏","八分节奏","前八后十六","附点节奏","切分节奏"], music_play:["初听","分段","辨乐器","悟情感","哼唱"],
+art_color:["三原色","间色","复色","冷暖色","对比色"], art_draw:["涂鸦","线条","图形","组合","细节","场景"], art_hand:["设计","备料","剪裁","粘贴","装饰","完成"], art_layout:["主题","主次","轮廓","细节","上色","调整"],
+labor_bag:["清空","分类","排列","放入","放文具","检查"], labor_sweep:["备工具","清扫","聚堆","装簸箕","倒垃圾","清洗"], labor_plant:["选种","松土","挖坑","播种","覆土","浇水","光照","施肥","收获"], labor_food:["洗蛋","加水","放蛋","开火","计时","捞出","冷却","剥壳"],
+heart_friend:["微笑","自我介绍","找共同话题","邀请活动","分享秘密","互助"], heart_conflict:["冷静","表达感受","倾听","找共同点","协商","和解"], heart_plan:["定目标","列任务","排序","分配时间","执行","检查","调整"],
+history_dynasty:["夏","商","周","秦","汉","三国","晋","南北朝","隋","唐","宋","元","明","清"], history_invent:["陶器","青铜器","铁器","造纸术","指南针","火药","印刷术"], history_festival:["春节","元宵","端午","中秋","重阳"],
+holiday:["元旦","春节","元宵","清明","劳动","端午","中秋","国庆"], jieqi:["立春","雨水","惊蛰","春分","清明","谷雨","立夏","小满","芒种","夏至","小暑","大暑","立秋","处暑","白露","秋分","寒露","霜降","立冬","小雪","大雪","冬至","小寒","大寒"],
+shiji:["黄帝","尧舜","大禹","商汤","武王","春秋","始皇","刘邦"], zizhitongjian:["三家分晋","商鞅变法","长平之战","楚汉争霸","贞观之治","安史之乱"], zhanguo7:["韩","赵","魏","楚","燕","齐","秦"], mulanci:["替父从军","辞家","奔赴战场","征战","立功","辞官","还乡","团聚"],
+kongque:["相爱","婆婆嫌弃","分离","惜别","守义","殉情","化鸟"], simingzhu:["三国演义","水浒传","西游记","红楼梦"], tangsongbadajia:["韩愈","柳宗元","欧阳修","苏洵","苏轼","苏辙","王安石","曾巩"],
+safe_earth:["伏地","遮挡","抓牢","撤离","到空旷地"], safe_crowd:["顺人流","不弯腰","护胸","侧躺","护头"], logic_sort:["时间","空间","程度","发展","步骤"], logic_solve:["发现问题","分析","假设","验证","结论","反思"],
 long_march:["瑞金出发","湘江战役","遵义会议","四渡赤水","巧渡金沙江","飞夺泸定桥","翻越夹金山","穿越草地","吴起镇会师"],
 kangri:["九一八事变（1931年）","一·二八事变（1932年）","一二·九运动（1935年）","西安事变（1936年）","卢沟桥事变（1937年）","淞沪会战（1937年）","平型关大捷（1937年）","南京大屠杀（1937年）","台儿庄大捷（1938年）","武汉会战（1938年）","长沙会战（1939年-1942年）","百团大战（1940年）","皖南事变（1941年）","开罗宣言（1943年）","日本宣布投降（1945年）"],
 ten_marshal:["朱德","彭德怀","林彪","刘伯承","贺龙","陈毅","罗荣桓","徐向前","聂荣臻","叶剑英"],
@@ -814,250 +159,118 @@ china_literature:["诗经 - 周朝（西周至春秋）","楚辞 - 战国","汉�
 world_landsea:["亚洲","非洲","欧洲","北美洲","南美洲","大洋洲（澳大利亚洲）","南极洲","太平洋","大西洋","印度洋","北冰洋"],
 china_province:["新疆维吾尔自治区 - 新","西藏自治区 - 藏","内蒙古自治区 - 蒙","青海省 - 青","四川省 - 川","黑龙江省 - 黑","甘肃省 - 甘","云南省 - 云","广西壮族自治区 - 桂","湖南省 - 湘","陕西省 - 陕","吉林省 - 吉","湖北省 - 鄂","广东省 - 粤","贵州省 - 贵","江西省 - 赣","河南省 - 豫","山东省 - 鲁","山西省 - 晋","辽宁省 - 辽","安徽省 - 皖","福建省 - 闽","江苏省 - 苏","浙江省 - 浙","重庆市 - 渝","宁夏回族自治区 - 宁","台湾省 - 台","海南省 - 琼","北京市 - 京","天津市 - 津","上海市 - 沪","香港特别行政区 - 港","澳门特别行政区 - 澳"]
 };
-
-const gradePool={
-1:["pinyin","num10","abc26","season_year","time_day","sancai","letter_apple","letter_egg","math_add10","eng_grade1"],
-2:["pinyin_shengmu","pinyin_yunmu","pinyin_zhengti","math_length","plant_grow","animal_life","sanzijing","shengxiao","eng_week","letter_cat","letter_dog","math_sub10","eng_grade2"],
-3:["math_shape","water_state","insect_full","music_scale","music_note","art_color","eng_month","engWord","labor_bag","labor_sweep","moral_grow","moral_family","history_festival","math_mul10","math_div10","eng_grade3"],
-4:["math_calc","dizigui","wenfang","wuchang","jieqi","holiday","rock_cycle","logic_sort","safe_crowd","digestive","moon_phase","essay_six","math_mix10","eng_grade4"],
-5:["math_numarea","tiangan","dizhi","liuyi","siku","history_invent","zhanguo7","bdplanet","heart_friend","heart_conflict","labor_plant","labor_food","eng_grade5"],
-6:["history_dynasty","shiji","zizhitongjian","simingzhu","tangsongbadajia","mulanci","kongque","logic_solve","safe_earth","moral_rule","corevalue","moral_time","moral_emotion","eng_grade6","campus_building","campus_village",
-"long_march","kangri","ten_marshal","ten_battle","china_invent","china_weapon","china_literature","world_landsea","china_province"]
-};
-
-const allTopics=[...gradePool[1],...gradePool[2],...gradePool[3],...gradePool[4],...gradePool[5],...gradePool[6],"chem_elements"];
-const subjectPool={
-yuwen:["pinyin","pinyin_shengmu","pinyin_yunmu","pinyin_zhengti","essay_six","sanzijing","dizigui"],
-shuxue:["num10","math_length","math_shape","math_calc","math_numarea","math_add10","math_sub10","math_mul10","math_div10","math_mix10"],
-yingyu:["abc26","eng_week","eng_month","eng_num","engWord","letter_apple","letter_cat","letter_dog","letter_banana","letter_egg","eng_grade1","eng_grade2","eng_grade3","eng_grade4","eng_grade5","eng_grade6"],
-kexue:["season_year","time_day","plant_grow","animal_life","water_state","rock_cycle","insect_full","moon_phase","digestive","bdplanet"],
-daofa:["moral_grow","moral_family","moral_rule","moral_time","moral_emotion","corevalue"],
-guoxue:["sancai","wenfang","siku","wuchang","liuyi","tiangan","dizhi","shengxiao"],
-yinyue:["music_note","music_scale","music_rhythm","music_play"],
-meishu:["art_color","art_draw","art_hand","art_layout"],
-laodong:["labor_bag","labor_sweep","labor_plant","labor_food"],
-xinli:["heart_friend","heart_conflict","heart_plan"],
-lishi:["history_dynasty","history_invent","history_festival","holiday","jieqi","shiji","zizhitongjian","zhanguo7","mulanci","kongque","simingzhu","tangsongbadajia",
-"long_march","kangri","ten_marshal","ten_battle","china_invent"],
-anquan:["safe_earth","safe_crowd","logic_sort","logic_solve"],
-huaxue:["chem_elements"],
-campus:["campus_building","campus_village"],
-xiandai:["china_weapon"],
-dili:["world_landsea","china_province"],
-wenxue:["china_literature"]
-};
-
-function pickSubject(sub){
-    if(sub === "xiandai" || sub === "dili" || sub === "wenxue"){
-        let arr = subjectPool[sub];
-        let key = arr[Math.floor(Math.random()*arr.length)];
-        document.getElementById("subjectSelect").value=key;
-        startGame();
-        document.getElementById("tip").innerText="✅ 已随机选择："+optionNameMap[key];
-        return;
-    }
-    let arr=subjectPool[sub];
-    let key=arr[Math.floor(Math.random()*arr.length)];
-    document.getElementById("subjectSelect").value=key;
-    startGame();
-    document.getElementById("tip").innerText="✅ 已随机选择："+optionNameMap[key];
-}
-function randomGradeTopic(g){let arr=gradePool[g];let key=arr[Math.floor(Math.random()*arr.length)];document.getElementById("subjectSelect").value=key;startGame();document.getElementById("tip").innerText=`✅ 已为${g}年级随机出题`;}
-function randomAllTopic(){let key=allTopics[Math.floor(Math.random()*allTopics.length)];document.getElementById("subjectSelect").value=key;startGame();document.getElementById("tip").innerText="🎲 全学科全年级随机出题";}
-
-function handleMathCalcTopic(topicKey, n){
-    let list = [...mathCalcData[topicKey]];
-    let usedRes = new Set();
-    let uniqueList = [];
-    for(let item of list){
-        if(!usedRes.has(item.res)){
-            usedRes.add(item.res);
-            uniqueList.push(item);
-        }
-    }
-    uniqueList.sort((a,b)=>a.res - b.res);
-    let selectList = uniqueList.slice(0, n);
-    return {show:selectList.map(x=>x.exp), raw:selectList};
-}
-
-function handleEngWordTopic(topicKey, n){
-    let words = engGradeWordData[topicKey];
-    let randomWord = words[Math.floor(Math.random()*words.length)].toLowerCase();
-    currentWordHint = engWordMeanMap[randomWord] || "";
-    let targetWord = randomWord.toUpperCase();
-    let letters = targetWord.split('');
-    let targetLength = Math.min(n, letters.length);
-    let selectLetters = letters.slice(0, targetLength);
-    return {show:selectLetters, raw:selectLetters};
-}
-
-function getSmartSeq(arr,n,keep){if(arr.length<=n)return [...arr];if(keep)return arr.slice(0,n);let res=[],step=Math.floor(arr.length/n);for(let i=0;i<n;i++){let idx=i*step+Math.floor(Math.random()*step);idx=Math.min(idx,arr.length-1);if(!res.includes(arr[idx]))res.push(arr[idx]);}while(res.length<n)res.push(arr[Math.floor(Math.random()*arr.length)]);return res;}
+const mathCalcData = { math_add10:[{exp:"0+1",res:1},{exp:"0+2",res:2},{exp:"0+3",res:3},{exp:"0+4",res:4},{exp:"0+5",res:5},{exp:"0+6",res:6},{exp:"0+7",res:7},{exp:"0+8",res:8},{exp:"0+9",res:9},{exp:"1+2",res:3},{exp:"1+3",res:4},{exp:"1+4",res:5},{exp:"1+5",res:6},{exp:"1+6",res:7},{exp:"1+7",res:8},{exp:"1+8",res:9}], math_sub10:[{exp:"1-0",res:1},{exp:"2-0",res:2},{exp:"3-0",res:3},{exp:"4-0",res:4},{exp:"5-1",res:4},{exp:"6-1",res:5},{exp:"7-1",res:6},{exp:"8-1",res:7},{exp:"9-1",res:8},{exp:"10-2",res:8},{exp:"10-3",res:7},{exp:"10-4",res:6}], math_mul10:[{exp:"1×1",res:1},{exp:"1×2",res:2},{exp:"1×3",res:3},{exp:"1×4",res:4},{exp:"1×5",res:5},{exp:"2×2",res:4},{exp:"2×3",res:6},{exp:"2×4",res:8},{exp:"3×2",res:6},{exp:"3×3",res:9},{exp:"4×2",res:8},{exp:"5×2",res:10}], math_div10:[{exp:"1÷1",res:1},{exp:"2÷1",res:2},{exp:"3÷1",res:3},{exp:"4÷1",res:4},{exp:"4÷2",res:2},{exp:"6÷2",res:3},{exp:"8÷2",res:4},{exp:"9÷3",res:3},{exp:"10÷2",res:5},{exp:"6÷3",res:2},{exp:"8÷4",res:2},{exp:"10÷5",res:2}], math_mix10:[{exp:"2+3",res:5},{exp:"6-2",res:4},{exp:"2×3",res:6},{exp:"8÷2",res:4},{exp:"3+3",res:6},{exp:"9-3",res:6},{exp:"1×5",res:5},{exp:"10÷5",res:2},{exp:"4+2",res:6},{exp:"7-2",res:5},{exp:"3×1",res:3},{exp:"6÷3",res:2}] };
+const engGradeWordData = { eng_grade1: ["I","am","cat","dog","egg","pen","apple","book","milk","rice","cake","fish","bag","car","red"], eng_grade2: ["hello","name","teacher","student","school","water","bread","banana","orange","white","black","green","blue","yellow","panda","tiger","bird","sun","moon","star"], eng_grade3: ["mother","father","sister","brother","family","friend","classroom","window","door","desk","chair","pencil","ruler","eraser","crayon","elephant","monkey","rabbit","duck","chicken"], eng_grade4: ["Monday","Tuesday","Friday","January","February","spring","summer","autumn","winter","football","basketball","swim","dance","draw","sing","read","write","study","work","sleep","eat","drink","play","watch"], eng_grade5: ["beautiful","interesting","exciting","difficult","easy","happy","sad","angry","tired","hospital","library","park","zoo","museum","restaurant","supermarket","cinema","theater","factory","farm","office","bank","hotel"], eng_grade6: ["important","different","expensive","cheap","comfortable","dangerous","safe","healthy","unhealthy","successful","famous","popular","traditional","modern","natural","environment","pollution","recycle","protect","develop","improve","achieve","decide","imagine"] };
+const engWordMeanMap = { "I":"我","am":"是","cat":"猫","dog":"狗","egg":"鸡蛋","pen":"钢笔","apple":"苹果","book":"书","milk":"牛奶","rice":"米饭","cake":"蛋糕","fish":"鱼","bag":"书包","car":"汽车","red":"红色","hello":"你好","name":"名字","teacher":"老师","student":"学生","school":"学校","water":"水","bread":"面包","banana":"香蕉","orange":"橙子","white":"白色","black":"黑色","green":"绿色","blue":"蓝色","yellow":"黄色","panda":"熊猫","tiger":"老虎","bird":"鸟","sun":"太阳","moon":"月亮","star":"星星","mother":"妈妈","father":"爸爸","sister":"姐妹","brother":"兄弟","family":"家庭","friend":"朋友","classroom":"教室","window":"窗户","door":"门","desk":"课桌","chair":"椅子","pencil":"铅笔","ruler":"尺子","eraser":"橡皮","crayon":"蜡笔","elephant":"大象","monkey":"猴子","rabbit":"兔子","duck":"鸭子","chicken":"鸡","Monday":"星期一","Tuesday":"星期二","Friday":"星期五","January":"一月","February":"二月","spring":"春天","summer":"夏天","autumn":"秋天","winter":"冬天","football":"足球","basketball":"篮球","swim":"游泳","dance":"跳舞","draw":"画画","sing":"唱歌","read":"读","write":"写","study":"学习","work":"工作","sleep":"睡觉","eat":"吃","drink":"喝","play":"玩","watch":"看","beautiful":"美丽的","interesting":"有趣的","exciting":"令人兴奋的","difficult":"困难的","easy":"容易的","happy":"开心的","sad":"伤心的","angry":"生气的","tired":"累的","hospital":"医院","library":"图书馆","park":"公园","zoo":"动物园","museum":"博物馆","restaurant":"餐馆","supermarket":"超市","cinema":"电影院","theater":"剧院","factory":"工厂","farm":"农场","office":"办公室","bank":"银行","hotel":"酒店","important":"重要的","different":"不同的","expensive":"昂贵的","cheap":"便宜的","comfortable":"舒适的","dangerous":"危险的","safe":"安全的","healthy":"健康的","unhealthy":"不健康的","successful":"成功的","famous":"著名的","popular":"受欢迎的","traditional":"传统的","modern":"现代的","natural":"自然的","environment":"环境","pollution":"污染","recycle":"回收","protect":"保护","develop":"发展","improve":"提升","achieve":"实现","decide":"决定","imagine":"想象" };
+let data = {};
+for(let k in rawData) if(rawData[k].length >=5) data[k]=rawData[k];
+for(let k in mathCalcData){ let uniq=new Set(); mathCalcData[k].forEach(i=>uniq.add(i.res)); if(uniq.size>=5) data[k]=mathCalcData[k].map(i=>i.exp); else delete data[k]; }
+for(let k in engGradeWordData){ let validWords=engGradeWordData[k].filter(w=>w.length>=5); if(validWords.length) data[k]=validWords; else delete data[k]; }
+VALID_TOPICS = new Set(Object.keys(data));
+const optionNameMap = { pinyin_shengmu:"语文·声母",pinyin_yunmu:"韵母",pinyin_zhengti:"整体认读",pinyin:"单韵母",essay_six:"作文六要素",sanzijing:"三字经",dizigui:"弟子规",math_add10:"10以内加法",math_sub10:"减法",math_mul10:"乘法",math_div10:"除法",math_mix10:"混合运算",num10:"数字1-10",math_length:"长度单位",math_shape:"几何图形",math_calc:"运算顺序",abc26:"字母表",eng_week:"星期",eng_month:"月份",eng_num:"数字英文",engWord:"入门单词",letter_apple:"apple",letter_banana:"banana",season_year:"四季",time_day:"时段",plant_grow:"植物生长",animal_life:"生命周期",water_state:"水三态",rock_cycle:"岩石循环",insect_full:"昆虫发育",moon_phase:"月相",digestive:"消化系统",bdplanet:"八大行星",moral_grow:"成长阶段",moral_family:"家庭角色",moral_rule:"规则",moral_time:"时间管理",moral_emotion:"情绪",corevalue:"核心价值观",wuchang:"五常",liuyi:"六艺",tiangan:"天干",dizhi:"地支",shengxiao:"生肖",music_note:"音符",music_scale:"唱名",music_rhythm:"节奏",music_play:"欣赏",art_color:"色彩",art_draw:"绘画",art_hand:"手工",art_layout:"构图",labor_bag:"整理书包",labor_sweep:"扫地",labor_plant:"种植",labor_food:"煮鸡蛋",heart_friend:"交友",heart_conflict:"冲突解决",heart_plan:"计划",history_dynasty:"朝代",history_invent:"发明",history_festival:"节日",holiday:"法定节日",jieqi:"节气",shiji:"史记",zizhitongjian:"资治通鉴",zhanguo7:"战国七雄",mulanci:"木兰辞",kongque:"孔雀东南飞",tangsongbadajia:"唐宋八大家",safe_earth:"地震避险",safe_crowd:"防踩踏",logic_sort:"逻辑排序",logic_solve:"解题步骤",chem_elements:"化学元素",long_march:"长征",kangri:"抗日",ten_marshal:"十大元帅",ten_battle:"十大战役",china_invent:"中国发明",china_weapon:"现代武器",china_literature:"历代文学",world_landsea:"大陆海洋",china_province:"省份面积",campus_building:"校园建筑",campus_village:"八村" };
+for(let k of VALID_TOPICS) if(!optionNameMap[k]) optionNameMap[k]=k;
+// 难度星级映射
+const topicDifficultyMap = {};
+for(let k of VALID_TOPICS) { let d=3; if(k.includes('grade1')||k==='pinyin'||k==='num10') d=1; else if(k.includes('grade2')||k.includes('shengmu')||k.includes('yunmu')||k.includes('season')) d=2; else if(k.includes('grade3')||k.includes('water')||k.includes('animal')||k.includes('plant')) d=3; else if(k.includes('grade4')||k.includes('history_festival')||k.includes('jieqi')) d=4; else if(k.includes('grade5')||k.includes('bdplanet')||k.includes('dynasty')) d=5; else if(k.includes('grade6')||k.includes('long_march')||k.includes('ten_marshal')) d=6; topicDifficultyMap[k]=d; }
+// 计算单局得分：难度星级 * (排序数量/5) 四舍五入
+function calcRoundScore(difficultyStar, sortCount) { let factor = sortCount / 5; let raw = difficultyStar * factor; return Math.max(1, Math.round(raw)); }
+// 构建下拉
+function buildSubjectSelect(){ let sel=document.getElementById('subjectSelect'); sel.innerHTML=''; Array.from(VALID_TOPICS).sort().forEach(t=>{let opt=document.createElement('option');opt.value=t;opt.textContent=optionNameMap[t];sel.appendChild(opt);}); }
+// 辅助函数
 function shuffle(a){let arr=[...a];for(let i=arr.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];}return arr;}
-function updatePlayer(){document.getElementById("nowPlayer").innerText=isP1Turn?"当前：红方操作":"当前：蓝方操作";}
+function getSmartSeq(arr,n,keep){if(arr.length<=n)return[...arr];if(keep)return arr.slice(0,n);let res=[],step=arr.length/n;for(let i=0;i<n;i++){let idx=Math.floor(i*step+Math.random()*step);idx=Math.min(idx,arr.length-1);if(!res.includes(arr[idx]))res.push(arr[idx]);}while(res.length<n)res.push(arr[Math.floor(Math.random()*arr.length)]);return res;}
 function coverAllCards(){document.querySelectorAll(".card").forEach(c=>{c.classList.remove("flipped","all-show");c.textContent="?";c.style.pointerEvents="";});}
 function showAllAnswer(){if(!originOrder.length)return;document.querySelectorAll(".card").forEach((c,i)=>{c.classList.add("all-show");c.textContent=originOrder[i];let span=document.createElement("span");span.className="card-index";span.innerText=i+1;c.appendChild(span);});}
-
-function lockRankInput() {
-    document.getElementById("userName").disabled = true;
-    document.querySelector(".rank-input button").disabled = true;
-}
-
-function unlockRankInput() {
-    document.getElementById("userName").disabled = false;
-    document.querySelector(".rank-input button").disabled = false;
-}
-
-// 修复：倒计时开始即记录时间，彻底杜绝0秒
-function startCountdown(topicKey) {
-    const difficulty = topicDifficulty[topicKey] || 3;
-    let count = Math.min(8, Math.max(3, difficulty));
-    
-    // 修复：单人模式从倒计时开始就初始化时间
-    if(gameMode === "single"){
-        startTime = Date.now();
-    }
-
-    countdownLayer.style.display = 'flex';
-    countdownLayer.innerText = count;
-    
-    clearInterval(countdownTimer);
-    countdownTimer = setInterval(() => {
-        count--;
-        if (count <= 0) {
-            clearInterval(countdownTimer);
-            countdownLayer.style.display = 'none';
-            coverAllCards();
-            document.querySelectorAll(".card").forEach(c => c.style.pointerEvents = "auto");
-            document.getElementById("tip").innerText = "倒计时结束，开始答题！";
-            
-            if(gameMode === "single") startTimer();
-            return;
-        }
-        countdownLayer.innerText = count;
-    }, 1000);
-}
-
+function lockRankInput(){document.getElementById("userName").disabled=true;document.querySelector(".rank-input button").disabled=true;}
+function unlockRankInput(){document.getElementById("userName").disabled=false;document.querySelector(".rank-input button").disabled=false;}
+function startTimer(){if(gameMode==="single"&&startTime) timerInterval=setInterval(()=>{document.getElementById("nowTime").innerText=formatTime(Date.now()-startTime);},1000);}
+function stopTimer(){if(timerInterval){clearInterval(timerInterval);timerInterval=null;}}
+function formatTime(ms){let s=Math.floor(ms/1000),m=Math.floor(s/60);s%=60;return String(m).padStart(2,'0')+":"+String(s).padStart(2,'0');}
+function saveBestTime(ms){if(ms<1000)return;let t=formatTime(ms);if(!bestRecord||ms<parseTimeToMs(bestRecord)){bestRecord=t;localStorage.setItem("memorize_best_time",bestRecord);renderBestTime();}}
+function parseTimeToMs(str){let [m,s]=str.split(":").map(Number);return m*60000+s*1000;}
+function renderBestTime(){document.getElementById("bestTime").innerText=bestRecord||"暂无";document.getElementById("nowTime").innerText="00:00";}
+function updatePlayer(){document.getElementById("nowPlayer").innerText=isP1Turn?"当前：红方操作":"当前：蓝方操作";}
+function addGameCount(){let g=localStorage.getItem("memorize_master_total_games");g=g?parseInt(g)+1:1;localStorage.setItem("memorize_master_total_games",g);document.getElementById("totalGames").innerText=g;}
+function addTopicPlayCount(k){let obj=JSON.parse(localStorage.getItem("memorize_master_topic_play_count")||"{}");obj[k]=(obj[k]||0)+1;localStorage.setItem("memorize_master_topic_play_count",JSON.stringify(obj));renderPopularList();}
+function renderPopularList(){let obj=JSON.parse(localStorage.getItem("memorize_master_topic_play_count")||"{}");let list=Object.entries(obj).filter(([k])=>VALID_TOPICS.has(k)).sort((a,b)=>b[1]-a[1]).slice(0,10);let html="";if(!list.length)html="<div style='color:#999'>暂无数据</div>";else list.forEach(([k,c],i)=>{html+=`<div class="popular-item">${i+1}. ${optionNameMap[k]} <span>${c}次</span></div>`;});document.getElementById("popularList").innerHTML=html;}
+function loadRankList(){let list=JSON.parse(localStorage.getItem("memorize_rank_list")||"[]");renderRankList(list);}
+function renderRankList(list){list=list.filter(i=>VALID_TOPICS.has(i.topic)).sort((a,b)=>(topicDifficultyMap[b.topic]||3)-(topicDifficultyMap[a.topic]||3)||a.timeMs-b.timeMs).slice(0,5);let html="";if(!list.length)html="<div style='color:#999'>暂无成绩记录</div>";else list.forEach((item,i)=>{html+=`<div class="rank-item"><span class="name">${i+1}. ${item.name||"匿名"}</span><span class="topic">${optionNameMap[item.topic]}</span><span class="time">${item.time}</span><span class="date">${item.date}</span></div>`;});document.getElementById("rankList").innerHTML=html;}
+function saveRankRecord(){let name=document.getElementById("userName").value.trim();if(!name||!/^[\u4e00-\u9fa5]{2,4}$/.test(name)){alert("请输入2-4位纯汉字姓名");return;}if(!lastGameData){alert("请先完成一局单人计时赛");return;}let list=JSON.parse(localStorage.getItem("memorize_rank_list")||"[]");if(list.some(i=>i.name===name&&i.topic===lastGameData.topic)){alert("已登记过该题目");return;}list.push({name,topic:lastGameData.topic,time:lastGameData.timeStr,timeMs:lastGameData.timeMs,date:new Date().toLocaleDateString()});localStorage.setItem("memorize_rank_list",JSON.stringify(list));loadRankList();document.getElementById("userName").value="";lockRankInput();alert("登记成功");}
+function resetScore(){score1=score2=0;document.getElementById("score1").innerText=score1;document.getElementById("score2").innerText=score2;isP1Turn=true;updatePlayer();}
+function switchMode(){let val=document.querySelector('input[name="gameMode"]:checked').value;gameMode=val;document.getElementById("pkBox").style.display=gameMode==="pk"?"block":"none";document.getElementById("timePanel").style.display=gameMode==="single"?"block":"none";document.getElementById("rankPanel").style.display=gameMode==="single"?"block":"none";stopTimer();if(gameMode==="single")renderBestTime();}
+function selectMode(m){gameMode=m;document.getElementById('startScreen').style.display='none';document.getElementById('mainContainer').style.display='block';document.querySelector(`input[name="gameMode"][value="${m}"]`).checked=true;switchMode();buildSubjectSelect();loadStats();}
+function pickSubject(sub){let pool={yuwen:[],shuxue:[],yingyu:[],kexue:[],daofa:[],guoxue:[],yinyue:[],meishu:[],laodong:[],xinli:[],lishi:[],anquan:[],huaxue:[],campus:[]};for(let k of VALID_TOPICS){if(k.includes('pinyin')||k.includes('essay')||k.includes('zijing')) pool.yuwen.push(k);else if(k.includes('math')||k.includes('num10')) pool.shuxue.push(k);else if(k.includes('eng')||k.includes('abc')||k.includes('letter')) pool.yingyu.push(k);else if(k.includes('season')||k.includes('plant')||k.includes('water')||k.includes('bdplanet')) pool.kexue.push(k);else if(k.includes('moral')||k.includes('core')) pool.daofa.push(k);else if(k.includes('wuchang')||k.includes('liuyi')||k.includes('tiangan')) pool.guoxue.push(k);else if(k.includes('music')) pool.yinyue.push(k);else if(k.includes('art')) pool.meishu.push(k);else if(k.includes('labor')) pool.laodong.push(k);else if(k.includes('heart')) pool.xinli.push(k);else if(k.includes('history')||k.includes('jieqi')||k.includes('long_march')||k.includes('ten_marshal')) pool.lishi.push(k);else if(k.includes('safe')||k.includes('logic')) pool.anquan.push(k);else if(k.includes('chem')) pool.huaxue.push(k);else if(k.includes('campus')) pool.campus.push(k);} let arr=pool[sub];if(!arr||!arr.length){alert("无此类有效题目");return;}let key=arr[Math.floor(Math.random()*arr.length)];document.getElementById("subjectSelect").value=key;startGame();}
+function randomGradeTopic(g){let gradeMap={1:[],2:[],3:[],4:[],5:[],6:[]};for(let k of VALID_TOPICS){let d=topicDifficultyMap[k];if(d===1) gradeMap[1].push(k);else if(d===2) gradeMap[2].push(k);else if(d===3) gradeMap[3].push(k);else if(d===4) gradeMap[4].push(k);else if(d===5) gradeMap[5].push(k);else if(d===6) gradeMap[6].push(k);}let arr=gradeMap[g];if(!arr.length){alert("该年级暂无题目");return;}let key=arr[Math.floor(Math.random()*arr.length)];document.getElementById("subjectSelect").value=key;startGame();}
+function randomAllTopic(){let arr=Array.from(VALID_TOPICS);let key=arr[Math.floor(Math.random()*arr.length)];document.getElementById("subjectSelect").value=key;startGame();}
 function startGame(){
-    let sub = document.getElementById("subjectSelect").value;
-    if (!sub) {
-        document.getElementById("tip").innerText = "请先在下拉框中选择题目！";
-        return;
-    }
-
-    lockRankInput();
-    currentWordHint = "";
-    stopTimer();
-    lastGameData = null;
-    
-    let title=optionNameMap[sub]||"自定义";
-    updateTopicExplain(sub);
-    
+    let sub=document.getElementById("subjectSelect").value;
+    if(!sub||!VALID_TOPICS.has(sub)){alert("请选择有效题目");return;}
+    lockRankInput(); currentWordHint=""; stopTimer(); lastGameData=null;
     let n=parseInt(document.getElementById("numSelect").value);
     let keep=document.getElementById("keepOriginSeq").checked;
-    
-    let isMathCalc = ["math_add10","math_sub10","math_mul10","math_div10","math_mix10"].includes(sub);
-    let isEngWord = ["eng_grade1","eng_grade2","eng_grade3","eng_grade4","eng_grade5","eng_grade6"].includes(sub);
-    let baseShow = [], baseRaw = [];
-
-    if(isMathCalc){
-        let res = handleMathCalcTopic(sub, n);
-        baseShow = res.show;
-        baseRaw = res.raw;
-    }else if(isEngWord){
-        let res = handleEngWordTopic(sub, n);
-        baseShow = res.show;
-        baseRaw = res.raw;
-    }else{
-        baseShow = data[sub]||[];
-    }
-
-    if(baseShow.length===0){alert("题库数据异常");return;}
+    let baseShow=[];
+    if(mathCalcData[sub]){let list=mathCalcData[sub];let map=new Map();list.forEach(i=>{if(!map.has(i.res))map.set(i.res,i.exp);});let sorted=[...map.entries()].sort((a,b)=>a[0]-b[0]).map(v=>v[1]);baseShow=sorted.slice(0,n);}
+    else if(engGradeWordData[sub]){let words=data[sub];let long=words.filter(w=>w.length>=5);let word=(long.length?long[Math.floor(Math.random()*long.length)]:words[0]).toLowerCase();currentWordHint=engWordMeanMap[word]||"";let letters=word.toUpperCase().split('');baseShow=letters.slice(0,Math.min(n,letters.length));}
+    else baseShow=data[sub]||[];
+    if(baseShow.length===0){alert("题库不足");return;}
     originOrder=getSmartSeq(baseShow,n,keep);
     cardList=shuffle(originOrder);
-    currentStep=0;
-    lock=false;
-    coverAllCards();
+    currentStep=0; lock=false; coverAllCards();
     addTopicPlayCount(sub);
-    let box=document.getElementById("gameBox");
-    box.innerHTML="";
-
-    let showTitle = title;
-    if(currentWordHint){
-        showTitle += `（${currentWordHint}）`;
-    }
-    document.getElementById("topicTitle").innerText = "当前题目：" + showTitle;
-
+    let box=document.getElementById("gameBox");box.innerHTML="";
+    let star=topicDifficultyMap[sub];
+    currentRoundScore = calcRoundScore(star, n);
+    currentTopicKey=sub;
+    let showTitle=optionNameMap[sub]; if(currentWordHint) showTitle+=`（${currentWordHint}）`;
+    document.getElementById("topicTitle").innerHTML=`当前题目：${showTitle} <span style="font-size:14px;background:#f1c40f;padding:2px 8px;border-radius:20px;">难度 ★${star}</span>`;
+    document.getElementById("roundScoreShow").style.display="inline-block";
+    document.getElementById("roundScoreShow").innerHTML=`⭐ 本局满分：${currentRoundScore} 分 (难度${star}星 × 数量系数${(n/5).toFixed(1)})`;
     cardList.forEach((txt,i)=>{
-        let div=document.createElement("div");
-        div.className="card";
-        div.textContent="?";
-        div.style.pointerEvents = "none";
+        let div=document.createElement("div");div.className="card";div.textContent="?";div.style.pointerEvents="none";
         div.onclick=()=>{
             if(lock||div.classList.contains("flipped")||div.classList.contains("all-show"))return;
-            div.classList.add("flipped");
-            div.textContent=txt;
+            div.classList.add("flipped");div.textContent=txt;
             if(txt===originOrder[currentStep]){
                 currentStep++;
                 if(currentStep===originOrder.length){
-                    document.getElementById("tip").innerText="🎉 闯关成功！";
+                    document.getElementById("tip").innerHTML="🎉 闯关成功！"+ (gameMode==="pk"?` +${currentRoundScore}分` : ` 知识掌握分：${currentRoundScore}`);
                     addGameCount();
-                    if(gameMode === "pk"){
-                        isP1Turn?score1++:score2++;
-                        document.getElementById("score1").innerText=score1;
-                        document.getElementById("score2").innerText=score2;
+                    if(gameMode==="pk"){
+                        if(isP1Turn) score1+=currentRoundScore; else score2+=currentRoundScore;
+                        document.getElementById("score1").innerText=score1; document.getElementById("score2").innerText=score2;
+                        document.getElementById("tip").innerHTML=`🎉 ${isP1Turn?"红方":"蓝方"} 闯关成功 +${currentRoundScore}分！`;
                     }else{
                         stopTimer();
-                        let usedMs = Date.now() - startTime;
+                        let usedMs=Date.now()-startTime;
                         saveBestTime(usedMs);
-                        lastGameData = {
-                            topic: sub,
-                            timeStr: formatTime(usedMs),
-                            timeMs: usedMs
-                        };
+                        lastGameData={topic:sub,timeStr:formatTime(usedMs),timeMs:usedMs};
                         unlockRankInput();
-                        document.getElementById("tip").innerText = `🎉 闯关成功！用时：${formatTime(usedMs)}`;
+                        document.getElementById("tip").innerHTML=`🎉 闯关成功！用时${formatTime(usedMs)}  +${currentRoundScore}知识分`;
                     }
-                }else{
-                    document.getElementById("tip").innerText="✅ 顺序正确，继续";
-                }
+                }else{ document.getElementById("tip").innerText="✅ 顺序正确，继续"; }
             }else{
-                if(gameMode === "pk"){
-                    isP1Turn=!isP1Turn;
-                    updatePlayer();
+                if(gameMode==="pk"){
+                    isP1Turn=!isP1Turn; updatePlayer();
                     document.getElementById("tip").innerText="❌ 顺序错误，换对方操作！";
-                    lock=true;
-                    setTimeout(()=>{currentStep=0;coverAllCards();lock=false;},1000);
+                    lock=true; setTimeout(()=>{currentStep=0;coverAllCards();lock=false;},1000);
                 }else{
                     document.getElementById("tip").innerText="❌ 顺序错误，请重新开始";
-                    lock=true;
-                    setTimeout(()=>{currentStep=0;coverAllCards();lock=false;},1000);
+                    lock=true; setTimeout(()=>{currentStep=0;coverAllCards();lock=false;},1000);
                 }
             }
         };
         box.appendChild(div);
     });
-
     showAllAnswer();
-    startCountdown(sub);
-
-    if(gameMode === "pk"){
-        updatePlayer();
-    }
+    let count=Math.min(8,Math.max(3,star));
+    if(gameMode==="single") startTime=Date.now();
+    countdownLayer.style.display='flex'; countdownLayer.innerText=count;
+    clearInterval(countdownTimer);
+    countdownTimer=setInterval(()=>{count--;if(count<=0){clearInterval(countdownTimer);countdownLayer.style.display='none';coverAllCards();document.querySelectorAll(".card").forEach(c=>c.style.pointerEvents="auto");document.getElementById("tip").innerText="倒计时结束，开始答题！";if(gameMode==="single")startTimer();}else countdownLayer.innerText=count;},1000);
+    if(gameMode==="pk") updatePlayer();
 }
-
-function resetScore(){
-    score1=score2=0;
-    document.getElementById("score1").innerText=score1;
-    document.getElementById("score2").innerText=score2;
-    isP1Turn=true;
-    updatePlayer();
-}
-
-document.getElementById('subjectSelect').addEventListener('change', function() {
-    startGame();
-});
-
-window.onload=loadStats;
+function loadStats(){let visits=localStorage.getItem("memorize_master_total_visits");visits=visits?parseInt(visits)+1:1;localStorage.setItem("memorize_master_total_visits",visits);document.getElementById("visitCount").innerText=visits;let games=localStorage.getItem("memorize_master_total_games");document.getElementById("totalGames").innerText=games?parseInt(games):0;loadRankList();renderBestTime();renderPopularList();}
+window.onload=()=>{buildSubjectSelect();loadStats();};
 </script>
 </body>
 </html>
